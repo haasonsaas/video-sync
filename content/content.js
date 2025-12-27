@@ -4,6 +4,19 @@
 (function() {
   'use strict';
 
+  // Sites where the extension should not activate
+  const EXCLUDED_SITES = [
+    'twitch.tv'
+  ];
+
+  // Check if current site is excluded
+  const hostname = window.location.hostname.replace('www.', '');
+  const isExcluded = EXCLUDED_SITES.some(site => hostname.includes(site));
+  if (isExcluded) {
+    console.log('[VideoSync] Site excluded, not activating');
+    return;
+  }
+
   let activeVideo = null;
   let ignoreEvents = false;
   let isBuffering = false;
@@ -33,7 +46,6 @@
     'hbomax.com': 'video',
     'max.com': 'video',
     'peacocktv.com': 'video',
-    'twitch.tv': 'video',
     'vimeo.com': 'video',
     'dailymotion.com': 'video'
   };
