@@ -21,6 +21,7 @@
   let ignoreEvents = false;
   let isBuffering = false;
   let myNickname = null;
+  let inSession = false;
   const SYNC_THRESHOLD = 0.5;
   const DEBOUNCE_MS = 100;
 
@@ -336,6 +337,8 @@
   // Toast notifications
   let toastStack = [];
   function showToast(message, type = 'info') {
+    if (!inSession) return;
+
     const container = getUIContainer();
 
     const toast = document.createElement('div');
@@ -395,6 +398,8 @@
   // Chat message display
   let chatContainer = null;
   function showChatMessage(nickname, message) {
+    if (!inSession) return;
+
     if (!chatContainer) {
       chatContainer = document.createElement('div');
       chatContainer.style.cssText = `
@@ -471,6 +476,10 @@
         showToast(message.message, 'info');
         break;
 
+      case 'session-status':
+        inSession = message.connected;
+        break;
+
       case 'get-video-state':
         if (activeVideo) {
           sendResponse({
@@ -513,6 +522,13 @@
   // Load nickname
   chrome.storage.local.get(['nickname'], (result) => {
     myNickname = result.nickname;
+  });
+
+  // Check initial session status
+  chrome.runtime.sendMessage({ action: 'get-status' }, (status) => {
+    if (status) {
+      inSession = status.connected && !!status.sessionCode;
+    }
   });
 
   // Add CSS animation

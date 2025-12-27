@@ -45,6 +45,13 @@ function updateBadge(text, color = '#4CAF50') {
   chrome.action.setBadgeBackgroundColor({ color });
 }
 
+// Enable/disable popup based on session state
+function setPopupEnabled(enabled) {
+  chrome.action.setPopup({
+    popup: enabled ? 'popup/popup.html' : ''
+  });
+}
+
 // Notify content scripts
 function notifyContentScripts(action, data = {}) {
   chrome.tabs.query({}, (tabs) => {
@@ -123,6 +130,8 @@ async function handleCreateSession(sendResponse) {
       isHost = true;
       peerCount = 1;
       updateBadge('0');
+      setPopupEnabled(true);
+      notifyContentScripts('session-status', { connected: true });
 
       chrome.storage.local.set({
         lastSession: { code: sessionCode, isHost: true, timestamp: Date.now() }
@@ -143,6 +152,8 @@ async function handleJoinSession(code, sendResponse) {
       isHost = false;
       peerCount = 2;
       updateBadge('1');
+      setPopupEnabled(true);
+      notifyContentScripts('session-status', { connected: true });
 
       chrome.storage.local.set({
         lastSession: { code: sessionCode, isHost: false, timestamp: Date.now() }
@@ -162,9 +173,13 @@ async function handleLeaveSession(sendResponse) {
     isHost = false;
     peerCount = 0;
     updateBadge('');
+    setPopupEnabled(false);
+    notifyContentScripts('session-status', { connected: false });
     chrome.storage.local.remove('lastSession');
     sendResponse(result);
   } catch (err) {
+    setPopupEnabled(false);
+    notifyContentScripts('session-status', { connected: false });
     sendResponse({ success: true }); // Still consider it left
   }
 }
@@ -240,6 +255,8 @@ function handleOffscreenMessage(message) {
       } else if (message.status === 'closed') {
         updateBadge('', '#ff4444');
         sessionCode = null;
+        setPopupEnabled(false);
+        notifyContentScripts('session-status', { connected: false });
       }
       break;
   }
@@ -254,4 +271,24 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
+// Initialize popup state based on session status
+async function initializePopupState() {
+  try {
+    if (await hasOffscreenDocument()) {
+      const status = await sendToOffscreen('get-status');
+      if (status.connected && status.sessionCode) {
+        sessionCode = status.sessionCode;
+        isHost = status.isHost;
+        peerCount = status.peerCount;
+        setPopupEnabled(true);
+        return;
+      }
+    }
+  } catch (err) {
+    console.log('[VideoSync] No active session on startup');
+  }
+  setPopupEnabled(false);
+}
+
+initializePopupState();
 console.log('[VideoSync] Background service worker started');
