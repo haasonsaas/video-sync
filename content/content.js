@@ -21,9 +21,34 @@
     return myNickname || 'You';
   }
 
+  // Find all videos including in shadow DOM
+  function findAllVideos(root = document) {
+    let videos = [...root.querySelectorAll('video')];
+
+    // Search shadow DOMs
+    root.querySelectorAll('*').forEach(el => {
+      if (el.shadowRoot) {
+        videos = videos.concat(findAllVideos(el.shadowRoot));
+      }
+    });
+
+    // Also check iframes (same-origin only)
+    try {
+      root.querySelectorAll('iframe').forEach(iframe => {
+        try {
+          if (iframe.contentDocument) {
+            videos = videos.concat(findAllVideos(iframe.contentDocument));
+          }
+        } catch (e) { /* cross-origin, skip */ }
+      });
+    } catch (e) { /* skip */ }
+
+    return videos;
+  }
+
   // Find the primary video element on the page
   function findPrimaryVideo() {
-    const videos = document.querySelectorAll('video');
+    const videos = findAllVideos();
     if (videos.length === 0) return null;
 
     let largest = videos[0];
