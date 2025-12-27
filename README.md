@@ -17,6 +17,22 @@ A Chrome extension that lets you watch videos in sync with friends using peer-to
 - **Auto-reconnect** - Handles connection drops gracefully
 - **Keyboard Shortcuts** - Quick controls while watching
 
+## Supported Platforms
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| YouTube | ✅ Tested | Full support |
+| Netflix | ✅ Tested | Full support |
+| Amazon Prime Video | ✅ Tested | Full support |
+| Disney+ | ✅ Expected | Standard HTML5 video |
+| Hulu | ✅ Expected | Standard HTML5 video |
+| HBO Max / Max | ✅ Expected | Standard HTML5 video |
+| Twitch | ✅ Expected | Live streams sync too |
+| Vimeo | ✅ Expected | Standard HTML5 video |
+| Any HTML5 video | ✅ Works | Generic support |
+
+> **Note**: Some sites may have DRM or custom players that could affect sync. If you encounter issues, please open an issue!
+
 ## How It Works
 
 ```

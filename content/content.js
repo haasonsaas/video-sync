@@ -21,9 +21,43 @@
     return myNickname || 'You';
   }
 
+  // Site-specific video selectors for faster/more reliable detection
+  const SITE_SELECTORS = {
+    'youtube.com': 'video.html5-main-video, video.video-stream',
+    'youtu.be': 'video.html5-main-video, video.video-stream',
+    'netflix.com': 'video',
+    'amazon.com': 'video',
+    'primevideo.com': 'video',
+    'disneyplus.com': 'video',
+    'hulu.com': 'video',
+    'hbomax.com': 'video',
+    'max.com': 'video',
+    'peacocktv.com': 'video',
+    'twitch.tv': 'video',
+    'vimeo.com': 'video',
+    'dailymotion.com': 'video'
+  };
+
+  // Get site-specific selector
+  function getSiteSelector() {
+    const hostname = window.location.hostname.replace('www.', '');
+    for (const [site, selector] of Object.entries(SITE_SELECTORS)) {
+      if (hostname.includes(site)) {
+        return selector;
+      }
+    }
+    return 'video';
+  }
+
   // Find all videos including in shadow DOM
   function findAllVideos(root = document) {
-    let videos = [...root.querySelectorAll('video')];
+    const selector = getSiteSelector();
+    let videos = [...root.querySelectorAll(selector)];
+
+    // Also try generic video selector
+    if (selector !== 'video') {
+      videos = videos.concat([...root.querySelectorAll('video')]);
+    }
 
     // Search shadow DOMs
     root.querySelectorAll('*').forEach(el => {
@@ -43,7 +77,8 @@
       });
     } catch (e) { /* skip */ }
 
-    return videos;
+    // Dedupe
+    return [...new Set(videos)];
   }
 
   // Find the primary video element on the page
@@ -51,18 +86,26 @@
     const videos = findAllVideos();
     if (videos.length === 0) return null;
 
-    let largest = videos[0];
+    // For single video, return it
+    if (videos.length === 1) return videos[0];
+
+    // Find the largest visible video
+    let largest = null;
     let maxArea = 0;
 
     videos.forEach(video => {
-      const area = video.clientWidth * video.clientHeight;
+      // Check if video is visible
+      const rect = video.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const area = rect.width * rect.height;
       if (area > maxArea) {
         maxArea = area;
         largest = video;
       }
     });
 
-    return largest;
+    return largest || videos[0];
   }
 
   // Set up event listeners on a video element
